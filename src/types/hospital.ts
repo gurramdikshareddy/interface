@@ -37,7 +37,7 @@ export interface Visit {
   lab_result_glucose: number;
   lab_result_bp: string;
   previous_visit_gap_days: number;
-  readmitted_within_30_days: boolean;
+  readmitted_30_days: boolean;
   visit_cost: number;
 }
 

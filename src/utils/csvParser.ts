@@ -45,7 +45,7 @@ export function parsePatientCSV(
         patient_id: values[0] || `PAT${Date.now()}_${i}`,
         full_name: values[1] || 'Unknown',
         age: parseInt(values[2]) || 0,
-        gender: values[3] || 'Unknown',
+        gender: (values[3] || 'Unknown') as "Male" | "Female" | "Other",
         blood_group: values[4] || 'O+',
         phone_number: values[5] || '0000000000',
         email: values[6] || '',
@@ -124,7 +124,7 @@ export function parseVisitCSV(
         lab_result_glucose: parseFloat(values[7]) || 0,
         lab_result_bp: values[8] || '120/80',
         previous_visit_gap_days: parseInt(values[9]) || 0,
-        readmitted_within_30_days: values[10] === 'true' || values[10] === '1',
+        readmitted_30_days: values[10] === 'true' || values[10] === '1',
         visit_cost: parseFloat(values[11]) || 0
       };
       

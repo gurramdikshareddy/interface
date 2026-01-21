@@ -1,99 +1,101 @@
 const express = require("express");
 const router = express.Router();
-const Doctor = require("../models/Doctor");
+const Patient = require("../models/Patient");
 
-// GET all doctors
+// GET all patients
 router.get("/", async (req, res) => {
   try {
-    const doctors = await Doctor.find().sort({ doctor_id: 1 });
-    res.json(doctors);
+    const patients = await Patient.find().sort({ patient_id: 1 });
+    res.json(patients);
   } catch (error) {
-    res.status(500).json({ message: "Error fetching doctors", error: error.message });
+    res.status(500).json({ message: "Error fetching patients", error: error.message });
   }
 });
 
-// GET doctor by doctor_id
-router.get("/:doctorId", async (req, res) => {
+// GET patient by patient_id
+router.get("/:patientId", async (req, res) => {
   try {
-    const doctor = await Doctor.findOne({ doctor_id: req.params.doctorId });
-    if (!doctor) {
-      return res.status(404).json({ message: "Doctor not found" });
+    const patient = await Patient.findOne({ patient_id: req.params.patientId });
+    if (!patient) {
+      return res.status(404).json({ message: "Patient not found" });
     }
-    res.json(doctor);
+    res.json(patient);
   } catch (error) {
-    res.status(500).json({ message: "Error fetching doctor", error: error.message });
+    res.status(500).json({ message: "Error fetching patient", error: error.message });
   }
 });
 
-// CREATE doctor
+// CREATE patient
 router.post("/", async (req, res) => {
   try {
-    const { doctor_name, user_id, password, doctor_speciality } = req.body;
+    const patientData = req.body;
 
-    if (!doctor_name || !user_id || !password || !doctor_speciality) {
-      return res.status(400).json({ message: "Missing required fields" });
-    }
-
-    const exists = await Doctor.findOne({ user_id });
+    // Check if patient_id already exists
+    const exists = await Patient.findOne({ patient_id: patientData.patient_id });
     if (exists) {
-      return res.status(400).json({ message: "User ID already exists" });
+      return res.status(400).json({ message: "Patient ID already exists" });
     }
 
-    const lastDoctor = await Doctor.findOne().sort({ doctor_id: -1 });
-    let nextId = "DOC001";
-
-    if (lastDoctor?.doctor_id) {
-      const num = parseInt(lastDoctor.doctor_id.replace("DOC", "")) + 1;
-      nextId = "DOC" + String(num).padStart(3, "0");
-    }
-
-    const doctor = await Doctor.create({
-      doctor_id: nextId,
-      doctor_name,
-      user_id,
-      password,
-      doctor_speciality
-    });
-
-    res.status(201).json({ message: "Doctor created", doctor });
+    const patient = await Patient.create(patientData);
+    res.status(201).json({ message: "Patient created", patient });
   } catch (error) {
-    res.status(500).json({ message: "Error creating doctor", error: error.message });
+    res.status(500).json({ message: "Error creating patient", error: error.message });
   }
 });
 
-// UPDATE doctor
-router.put("/:doctorId", async (req, res) => {
+// UPDATE patient
+router.put("/:patientId", async (req, res) => {
   try {
-    const doctor = await Doctor.findOneAndUpdate(
-      { doctor_id: req.params.doctorId },
+    const patient = await Patient.findOneAndUpdate(
+      { patient_id: req.params.patientId },
       req.body,
       { new: true, runValidators: true }
     );
 
-    if (!doctor) {
-      return res.status(404).json({ message: "Doctor not found" });
+    if (!patient) {
+      return res.status(404).json({ message: "Patient not found" });
     }
 
-    res.json({ message: "Doctor updated", doctor });
+    res.json({ message: "Patient updated", patient });
   } catch (error) {
-    res.status(500).json({ message: "Error updating doctor", error: error.message });
+    res.status(500).json({ message: "Error updating patient", error: error.message });
   }
 });
 
-// DELETE doctor
-router.delete("/:doctorId", async (req, res) => {
+// DELETE patient
+router.delete("/:patientId", async (req, res) => {
   try {
-    const doctor = await Doctor.findOneAndDelete({
-      doctor_id: req.params.doctorId
+    const patient = await Patient.findOneAndDelete({
+      patient_id: req.params.patientId
     });
 
-    if (!doctor) {
-      return res.status(404).json({ message: "Doctor not found" });
+    if (!patient) {
+      return res.status(404).json({ message: "Patient not found" });
     }
 
-    res.json({ message: "Doctor deleted", doctor });
+    res.json({ message: "Patient deleted", patient });
   } catch (error) {
-    res.status(500).json({ message: "Error deleting doctor", error: error.message });
+    res.status(500).json({ message: "Error deleting patient", error: error.message });
+  }
+});
+
+// BULK CREATE patients
+router.post("/bulk", async (req, res) => {
+  try {
+    const patients = req.body;
+    
+    if (!Array.isArray(patients)) {
+      return res.status(400).json({ message: "Expected array of patients" });
+    }
+
+    const createdPatients = await Patient.insertMany(patients);
+    res.status(201).json({ 
+      message: "Patients created successfully", 
+      count: createdPatients.length,
+      patients: createdPatients 
+    });
+  } catch (error) {
+    res.status(500).json({ message: "Error creating patients", error: error.message });
   }
 });
 

@@ -33,6 +33,7 @@ type HospitalAction =
   | { type: "SET_VISITS"; payload: Visit[] }
   | { type: "SET_PRESCRIPTIONS"; payload: Prescription[] }
   | { type: "ADD_PATIENT"; payload: Patient }
+  | { type: "UPDATE_PATIENT"; payload: Patient }
   | { type: "DELETE_PATIENT"; payload: string }
   | { type: "ADD_DOCTOR"; payload: Doctor }
   | { type: "DELETE_DOCTOR"; payload: string }
@@ -77,6 +78,14 @@ function hospitalReducer(
 
     case "ADD_PATIENT":
       return { ...state, patients: [...state.patients, action.payload] };
+
+    case "UPDATE_PATIENT":
+      return {
+        ...state,
+        patients: state.patients.map(p =>
+          p.patient_id === action.payload.patient_id ? action.payload : p
+        ),
+      };
 
     case "DELETE_PATIENT":
       return {
@@ -137,6 +146,7 @@ interface HospitalContextType {
   state: HospitalState;
 
   addPatient: (patient: Patient) => void;
+  updatePatient: (patient: Patient) => void;
   deletePatient: (id: string) => Promise<void>;
 
   addDoctor: (doctor: Doctor) => void;
@@ -162,6 +172,10 @@ interface HospitalContextType {
   generatePrescriptionId: () => string;
 
   isDoctorUserIdUnique: (userId: string) => boolean;
+  isPatientIdUnique: (patientId: string) => boolean;
+  
+  fetchPatients: () => Promise<void>;
+  getVisitsByPatient: (patientId: string) => Visit[];
 }
 
 const HospitalContext = createContext<HospitalContextType | undefined>(
@@ -214,6 +228,10 @@ export function HospitalProvider({
 
   const addPatient = useCallback((patient: Patient) => {
     dispatch({ type: "ADD_PATIENT", payload: patient });
+  }, []);
+
+  const updatePatient = useCallback((patient: Patient) => {
+    dispatch({ type: "UPDATE_PATIENT", payload: patient });
   }, []);
 
   const deletePatient = useCallback(async (id: string) => {
@@ -302,6 +320,12 @@ export function HospitalProvider({
   const isDoctorUserIdUnique = (userId: string) =>
     !state.doctors.some((d) => d.user_id === userId);
 
+  const isPatientIdUnique = (patientId: string) =>
+    !state.patients.some((p) => p.patient_id === patientId);
+
+  const getVisitsByPatient = (patientId: string) =>
+    state.visits.filter((visit) => visit.patient_id === patientId);
+
   /* ---------- Provider ---------- */
 
   return (
@@ -309,6 +333,7 @@ export function HospitalProvider({
       value={{
         state,
         addPatient,
+        updatePatient,
         deletePatient,
         addDoctor,
         deleteDoctor,
@@ -323,6 +348,9 @@ export function HospitalProvider({
         generateVisitId,
         generatePrescriptionId,
         isDoctorUserIdUnique,
+        isPatientIdUnique,
+        fetchPatients,
+        getVisitsByPatient,
       }}
     >
       {children}

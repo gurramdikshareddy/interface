@@ -12,20 +12,24 @@ const app = express();
 
 const allowedOrigins = [
   "http://localhost:5173",
-  "https://hospital-backend-api-l71r.onrender.com/"
+  "http://localhost:8080",
+  "http://localhost:8081",
+  "https://hospital-backend-api-l71r.onrender.com/",
 ];
 
-app.use(cors({
-  origin: function (origin, callback) {
-    if (!origin) return callback(null, true);
-    if (allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      callback(new Error("CORS not allowed"));
-    }
-  },
-  credentials: true
-}));
+app.use(
+  cors({
+    origin: function (origin, callback) {
+      if (!origin) return callback(null, true);
+      if (allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error("CORS not allowed"));
+      }
+    },
+    credentials: true,
+  }),
+);
 
 app.use(express.json({ limit: "100mb" }));
 app.use(express.urlencoded({ limit: "100mb", extended: true }));

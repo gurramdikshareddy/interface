@@ -41,12 +41,12 @@ const visitSchema = new mongoose.Schema(
       default: 0
     },
 
-    lab_glucose: {
+    lab_result_glucose: {
       type: Number,
       default: 0
     },
 
-    lab_bp: {
+    lab_result_bp: {
       type: String, // example: "120/80"
       default: "0/0"
     },
