@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { ChevronRight, ChevronLeft, Check } from "lucide-react";
 import { useHospital } from "@/context/HospitalContext";
-import { Patient, BLOOD_GROUPS, CHRONIC_CONDITIONS } from "@/types/hospital";
+import { Patient } from "@/types/hospital";
 import { toast } from "sonner";
 
 interface PatientFormProps {
@@ -40,30 +40,38 @@ export function PatientForm({ onClose, patient }: PatientFormProps) {
     insurance_type: patient?.insurance_type || "",
   });
 
+  /* ---------------- VALIDATION ---------------- */
+
   const validateStep1 = () => {
     const newErrors: Record<string, string> = {};
 
-    if (!formData.patient_id)
+    if (!formData.patient_id) {
       newErrors.patient_id = "Patient ID is required";
-    else if (!patient && !isPatientIdUnique(formData.patient_id))
+    } else if (!patient && !isPatientIdUnique(formData.patient_id)) {
       newErrors.patient_id = "Patient ID already exists";
+    }
 
-    if (!formData.full_name.trim())
+    if (!formData.full_name.trim()) {
       newErrors.full_name = "Full name is required";
+    }
 
-    if (formData.age < 0 || formData.age > 150)
+    if (formData.age < 0 || formData.age > 150) {
       newErrors.age = "Age must be between 0–150";
+    }
 
-    if (!formData.phone_number.trim())
+    if (!formData.phone_number.trim()) {
       newErrors.phone_number = "Phone number is required";
+    }
 
-    if (!formData.email.trim())
+    if (!formData.email.trim()) {
       newErrors.email = "Email is required";
-    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email))
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
       newErrors.email = "Invalid email format";
+    }
 
-    if (!formData.emergency_contact.trim())
+    if (!formData.emergency_contact.trim()) {
       newErrors.emergency_contact = "Emergency contact is required";
+    }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -72,56 +80,70 @@ export function PatientForm({ onClose, patient }: PatientFormProps) {
   const validateStep2 = () => {
     const newErrors: Record<string, string> = {};
 
-    if (!formData.hospital_location.trim())
+    if (!formData.hospital_location.trim()) {
       newErrors.hospital_location = "Hospital location is required";
+    }
 
-    if (formData.bmi < 10 || formData.bmi > 100)
+    if (formData.bmi < 10 || formData.bmi > 100) {
       newErrors.bmi = "BMI must be between 10–100";
+    }
 
-    if (!formData.registration_date)
+    if (!formData.registration_date) {
       newErrors.registration_date = "Registration date is required";
+    }
 
-    if (!formData.insurance_type.trim())
+    if (!formData.insurance_type.trim()) {
       newErrors.insurance_type = "Insurance type is required";
+    }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
+  /* ---------------- SUBMIT ---------------- */
+
   const handleSubmit = async () => {
     if (!validateStep2()) return;
 
     try {
-      const url = patient
-        ? `${import.meta.env.VITE_API_BASE_URL}/api/patients/${formData.patient_id}`
-        : `${import.meta.env.VITE_API_BASE_URL}/api/patients`;
+      const endpoint = patient
+        ? `/api/patients/${formData.patient_id}`
+        : `/api/patients`;
 
-      const response = await fetch(url, {
+      console.log("📡 Saving patient to:", endpoint);
+
+      const response = await fetch(endpoint, {
         method: patient ? "PUT" : "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+        },
         body: JSON.stringify(formData),
       });
 
-      const savedPatient = await response.json();
+      const text = await response.text();
+      const data = text ? JSON.parse(text) : null;
 
       if (!response.ok) {
-        throw new Error(savedPatient.message || "Failed to save patient");
+        console.error("❌ API Error:", data);
+        throw new Error(data?.message || "Failed to save patient");
       }
 
       if (patient) {
-        updatePatient(savedPatient);
+        updatePatient(data);
         toast.success("Patient updated successfully");
       } else {
-        addPatient(savedPatient);
+        addPatient(data);
         toast.success("Patient added successfully");
       }
 
       onClose();
-    } catch (err: any) {
-      console.error("SAVE PATIENT ERROR:", err);
-      toast.error(err.message || "Error saving patient");
+    } catch (error: any) {
+      console.error("❌ SAVE PATIENT ERROR:", error);
+      toast.error(error.message || "Error saving patient");
     }
   };
+
+  /* ---------------- HELPERS ---------------- */
 
   const handleConditionToggle = (condition: string) => {
     setFormData((prev) => ({
@@ -132,5 +154,10 @@ export function PatientForm({ onClose, patient }: PatientFormProps) {
     }));
   };
 
-  /* ---------- UI BELOW (UNCHANGED STRUCTURE) ---------- */
-  // 👉 Everything else in your JSX remains exactly the same
+  /* ---------------- UI (KEEP YOUR JSX SAME) ---------------- */
+  return (
+    <>
+      {/* ✅ KEEP YOUR EXISTING JSX UI HERE */}
+    </>
+  );
+}
