@@ -12,7 +12,7 @@ const app = express();
 
 const allowedOrigins = [
   "http://localhost:5173",
-  "https://your-frontend-name.vercel.app"
+  "https://hospital-backend-api-l71r.onrender.com/"
 ];
 
 app.use(cors({
