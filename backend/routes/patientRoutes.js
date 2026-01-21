@@ -1,118 +1,99 @@
 const express = require("express");
 const router = express.Router();
-const mongoose = require("mongoose");
+const Doctor = require("../models/Doctor");
 
-// Patient schema
-const PatientSchema = new mongoose.Schema({
-  patient_id: { type: String, required: true, unique: true },
-  full_name: { type: String, required: true },
-  age: { type: Number, required: true },
-  gender: { type: String, required: true },
-  blood_group: { type: String, required: true },
-  phone_number: { type: String, required: true },
-  email: { type: String },
-  emergency_contact: { type: String },
-  hospital_location: { type: String },
-  bmi: { type: Number },
-  smoker_status: { type: Boolean, default: false },
-  alcohol_use: { type: Boolean, default: false },
-  chronic_conditions: { type: [String], default: [] },
-  registration_date: { type: String, required: true },
-  insurance_type: { type: String }
-});
-
-// Patient model
-const Patient = mongoose.model("Patient", PatientSchema);
-
-// ✅ GET all patients
+// GET all doctors
 router.get("/", async (req, res) => {
   try {
-    const patients = await Patient.find().sort({ registration_date: -1 });
-    res.json(patients);
-  } catch (err) {
-    console.error("Error fetching patients:", err);
-    res.status(500).json({ message: "Error fetching patients" });
+    const doctors = await Doctor.find().sort({ doctor_id: 1 });
+    res.json(doctors);
+  } catch (error) {
+    res.status(500).json({ message: "Error fetching doctors", error: error.message });
   }
 });
 
-// ✅ POST single patient
+// GET doctor by doctor_id
+router.get("/:doctorId", async (req, res) => {
+  try {
+    const doctor = await Doctor.findOne({ doctor_id: req.params.doctorId });
+    if (!doctor) {
+      return res.status(404).json({ message: "Doctor not found" });
+    }
+    res.json(doctor);
+  } catch (error) {
+    res.status(500).json({ message: "Error fetching doctor", error: error.message });
+  }
+});
+
+// CREATE doctor
 router.post("/", async (req, res) => {
   try {
-    const patient = new Patient(req.body);
-    await patient.save();
-    res.status(201).json({ 
-      message: "Patient saved successfully", 
-      patient 
-    });
-  } catch (err) {
-    console.error("Error saving patient:", err);
-    res.status(500).json({ message: "Error saving patient" });
-  }
-});
+    const { doctor_name, user_id, password, doctor_speciality } = req.body;
 
-// ✅ POST bulk patients
-router.post("/bulk", async (req, res) => {
-  try {
-    console.log("📥 Patient bulk upload received:", req.body?.length || 0, "items");
-    
-    // Validate input
-    if (!Array.isArray(req.body) || req.body.length === 0) {
-      return res.status(400).json({ message: "Invalid data format or empty array" });
+    if (!doctor_name || !user_id || !password || !doctor_speciality) {
+      return res.status(400).json({ message: "Missing required fields" });
     }
 
-    // Validate each patient has required fields
-    for (let i = 0; i < req.body.length; i++) {
-      const patient = req.body[i];
-      if (!patient.patient_id || !patient.full_name || !patient.age) {
-        return res.status(400).json({ 
-          message: `Patient at index ${i} missing required fields`,
-          patient
-        });
-      }
+    const exists = await Doctor.findOne({ user_id });
+    if (exists) {
+      return res.status(400).json({ message: "User ID already exists" });
     }
 
-    const patients = await Patient.insertMany(req.body, { ordered: false });
-    console.log("✅ Saved", patients.length, "patients to MongoDB");
-    
-    res.status(201).json({
-      message: `${patients.length} patients saved successfully`,
-      count: patients.length,
-      patients: patients
+    const lastDoctor = await Doctor.findOne().sort({ doctor_id: -1 });
+    let nextId = "DOC001";
+
+    if (lastDoctor?.doctor_id) {
+      const num = parseInt(lastDoctor.doctor_id.replace("DOC", "")) + 1;
+      nextId = "DOC" + String(num).padStart(3, "0");
+    }
+
+    const doctor = await Doctor.create({
+      doctor_id: nextId,
+      doctor_name,
+      user_id,
+      password,
+      doctor_speciality
     });
+
+    res.status(201).json({ message: "Doctor created", doctor });
   } catch (error) {
-    console.error("❌ Bulk insert failed:", error.message);
-    res.status(500).json({ 
-      message: "Bulk insert failed",
-      error: error.message 
-    });
+    res.status(500).json({ message: "Error creating doctor", error: error.message });
   }
 });
 
-// ✅ DELETE patient by patient_id
-router.delete("/:patientId", async (req, res) => {
+// UPDATE doctor
+router.put("/:doctorId", async (req, res) => {
   try {
-    const { patientId } = req.params;
+    const doctor = await Doctor.findOneAndUpdate(
+      { doctor_id: req.params.doctorId },
+      req.body,
+      { new: true, runValidators: true }
+    );
 
-    const deleted = await Patient.findOneAndDelete({
-      patient_id: patientId.trim()
-    });
-
-    if (!deleted) {
-      return res.status(404).json({
-        message: "Patient not found",
-      });
+    if (!doctor) {
+      return res.status(404).json({ message: "Doctor not found" });
     }
 
-    res.json({
-      message: "Patient deleted successfully",
-      patient: deleted
+    res.json({ message: "Doctor updated", doctor });
+  } catch (error) {
+    res.status(500).json({ message: "Error updating doctor", error: error.message });
+  }
+});
+
+// DELETE doctor
+router.delete("/:doctorId", async (req, res) => {
+  try {
+    const doctor = await Doctor.findOneAndDelete({
+      doctor_id: req.params.doctorId
     });
-  } catch (err) {
-    console.error("Delete error:", err);
-    res.status(500).json({
-      message: "Failed to delete patient",
-      error: err.message
-    });
+
+    if (!doctor) {
+      return res.status(404).json({ message: "Doctor not found" });
+    }
+
+    res.json({ message: "Doctor deleted", doctor });
+  } catch (error) {
+    res.status(500).json({ message: "Error deleting doctor", error: error.message });
   }
 });
 
